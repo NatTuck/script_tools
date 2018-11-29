@@ -8,6 +8,14 @@ This library exposes some of that functionality.
 These functions may not be suitable for use in a long-running application due to
 not leaving the BEAM process in a consistent state or even still running.
 
+Functionality:
+
+ - system (3)
+ - fork (2)
+ - exec (2)
+ - shell - system("/bin/bash -c '...'")
+ - exit (3)
+
 ## Installation
 
 If [available in Hex](https://hex.pm/docs/publish), the package can be installed

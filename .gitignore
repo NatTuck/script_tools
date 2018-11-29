@@ -1,3 +1,7 @@
+# Temporary C build artifacts.
+*.so
+*.o
+
 # The directory Mix will write compiled artifacts to.
 /_build/
 
