@@ -7,7 +7,8 @@ defmodule ScriptTools.MixProject do
       version: "0.1.0",
       elixir: "~> 1.7",
       start_permanent: Mix.env() == :prod,
-      deps: deps()
+      deps: deps(),
+      compilers: Mix.compilers ++ [:simple_make],
     ]
   end
 
