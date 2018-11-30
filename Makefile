@@ -8,7 +8,7 @@ else
 	ERLINC := $(shell dirname `find /usr -name "erl_nif.h" | head -n 1`)
 endif
 
-CFLAGS  := -c -fPIC -I$(ERLINC)
+CFLAGS  := -c -fPIC -I$(ERLINC) -D_GNU_SOURCE
 LDFLAGS := -shared
 
 tools.so: src/tools.o

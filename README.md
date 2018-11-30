@@ -12,8 +12,7 @@ Functionality:
 
  - system (3)
  - fork (2)
- - exec (2)
- - shell - system("/bin/bash -c '...'")
+ - execvp (2)
  - exit (3)
 
 ## Installation

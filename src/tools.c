@@ -1,10 +1,35 @@
-#include <assert.h>
-#include <sys/types.h>
-#include <unistd.h>
+
 #include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
+#include <assert.h>
+
+#include <sys/types.h>
+#include <sys/wait.h>
+#include <termios.h>
 #include <unistd.h>
 
 #include <erl_nif.h>
+
+static
+ERL_NIF_TERM
+make_error(ErlNifEnv* env, const char* emsg)
+{
+    ERL_NIF_TERM err = enif_make_atom(env, "error");
+    ERL_NIF_TERM msg = enif_make_atom(env, emsg);
+    return enif_make_tuple(env, 2, err, msg);
+}
+
+static
+ERL_NIF_TERM
+make_error_int(ErlNifEnv* env, const char* emsg, int code)
+{
+    ERL_NIF_TERM err = enif_make_atom(env, "error");
+    ERL_NIF_TERM msg = enif_make_atom(env, emsg);
+    ERL_NIF_TERM num = enif_make_int(env, code);
+    ERL_NIF_TERM bod = enif_make_tuple(env, 2, msg, num);
+    return enif_make_tuple(env, 2, err, bod);
+}
 
 static
 ERL_NIF_TERM
@@ -13,9 +38,12 @@ st_exit(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
     assert(argc == 1);
 
     int code;
-    enif_get_int(env, argv[0], &code);
+    int rv = enif_get_int(env, argv[0], &code);
+    if (!rv) {
+        return make_error(env, "badarg");
+    }
 
-    // Get us back to canonical input mode.
+    // iex puts us in some weird input mode, let's reset that
     system("stty sane");
 
     exit(code);
@@ -31,13 +59,65 @@ st_system(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
     assert(argc == 1);
 
     ErlNifBinary cmd;
-    
+    int rv = enif_inspect_binary(env, argv[0], &cmd);
+    if (!rv) {
+        return make_error(env, "badarg");
+    }
+
+    // iex puts us in some weird input mode, save it and reset it
+    struct termios term_state;
+    tcgetattr(0, &term_state);
+    system("stty sane");
+
+    rv = system(strndupa(cmd.data, cmd.size));
+
+    // restore whatever weird terminal state we started in
+    tcsetattr(0, TCSANOW, &term_state);
+
+    if (rv == -1) {
+        return make_error(env, "nochild");
+    }
+
+    if (WIFEXITED(rv)) {
+        int code = WEXITSTATUS(rv);
+        if (code == 0) {
+            return enif_make_atom(env, "ok");
+        }
+        else {
+            return make_error_int(env, "exit", code);
+        }
+    }
+    else if (WIFSIGNALED(rv)) {
+        return make_error_int(env, "signal", WTERMSIG(rv));
+    }
+    else {
+        return make_error(env, "unknown");
+    }
 }
+
+static
+ERL_NIF_TERM
+st_execvp(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
+{
+    assert(argc == 2);
+    return make_error(env, "todo");
+}
+
+static
+ERL_NIF_TERM
+st_fork(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
+{
+    assert(argc == 1);
+    return make_error(env, "todo");
+}
+
 
 static ErlNifFunc funcs[] =
 {
     {"sys_exit", 1, st_exit},
     {"system", 1, st_system},
+    {"execvp", 2, st_execvp},
+    {"fork", 0, st_fork},
 };
 
 ERL_NIF_INIT(Elixir.ScriptTools, funcs, NULL, NULL, NULL, NULL)
