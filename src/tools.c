@@ -13,6 +13,14 @@
 
 static
 ERL_NIF_TERM
+make_ok(ErlNifEnv* env, ERL_NIF_TERM val)
+{
+    ERL_NIF_TERM ok = enif_make_atom(env, "ok");
+    return enif_make_tuple(env, 2, ok, val);
+}
+
+static
+ERL_NIF_TERM
 make_error(ErlNifEnv* env, const char* emsg)
 {
     ERL_NIF_TERM err = enif_make_atom(env, "error");
@@ -54,26 +62,8 @@ st_exit(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
 
 static
 ERL_NIF_TERM
-st_system(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
+make_wait_ret(ErlNifEnv *env, int rv)
 {
-    assert(argc == 1);
-
-    ErlNifBinary cmd;
-    int rv = enif_inspect_binary(env, argv[0], &cmd);
-    if (!rv) {
-        return make_error(env, "badarg");
-    }
-
-    // iex puts us in some weird input mode, save it and reset it
-    struct termios term_state;
-    tcgetattr(0, &term_state);
-    system("stty sane");
-
-    rv = system(strndupa(cmd.data, cmd.size));
-
-    // restore whatever weird terminal state we started in
-    tcsetattr(0, TCSANOW, &term_state);
-
     if (rv == -1) {
         return make_error(env, "nochild");
     }
@@ -97,6 +87,31 @@ st_system(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
 
 static
 ERL_NIF_TERM
+st_system(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
+{
+    assert(argc == 1);
+
+    ErlNifBinary cmd;
+    int rv = enif_inspect_binary(env, argv[0], &cmd);
+    if (!rv) {
+        return make_error(env, "badarg");
+    }
+
+    // iex puts us in some weird input mode, save it and reset it
+    struct termios term_state;
+    tcgetattr(0, &term_state);
+    system("stty sane");
+
+    rv = system(strndupa(cmd.data, cmd.size));
+
+    // restore whatever weird terminal state we started in
+    tcsetattr(0, TCSANOW, &term_state);
+
+    return make_wait_ret(env, rv);
+}
+
+static
+ERL_NIF_TERM
 st_execvp(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
 {
     assert(argc == 2);
@@ -107,10 +122,34 @@ static
 ERL_NIF_TERM
 st_fork(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
 {
-    assert(argc == 1);
-    return make_error(env, "todo");
+    assert(argc == 0);
+    int rv = fork();
+    if (rv == -1) {
+        return make_error(env, "failed");
+    }
+    return make_ok(env, enif_make_int(env, rv));
 }
 
+static
+ERL_NIF_TERM
+st_waitpid(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
+{
+    assert(argc == 1);
+
+    int pid;
+    int rv = enif_get_int(env, argv[0], &pid);
+    if (!rv) {
+        return make_error(env, "badarg");
+    }
+
+    int status;
+    rv = waitpid(pid, &status, 0);
+    if (!rv) {
+        return make_error(env, "wait");
+    }
+
+    return make_wait_ret(env, status);
+}
 
 static ErlNifFunc funcs[] =
 {
@@ -118,6 +157,7 @@ static ErlNifFunc funcs[] =
     {"system", 1, st_system},
     {"execvp", 2, st_execvp},
     {"fork", 0, st_fork},
+    {"waitpid", 1, st_waitpid},
 };
 
 ERL_NIF_INIT(Elixir.ScriptTools, funcs, NULL, NULL, NULL, NULL)
