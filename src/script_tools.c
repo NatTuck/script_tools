@@ -115,7 +115,11 @@ ERL_NIF_TERM
 st_execvp(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
 {
     assert(argc == 2);
-    return make_error(env, "todo");
+
+    char* cmd = strndupa(cmd.data, cmd.size);
+
+    
+
 }
 
 static

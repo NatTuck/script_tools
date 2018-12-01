@@ -2,10 +2,12 @@ defmodule ScriptTools.MixProject do
   use Mix.Project
 
   def project do
+    # Might make more sense to put this compiler task
+    # outside lib and manually load it here?
     #Code.require_file("lib/mix/tasks/compile.simple_make.ex")
     [
       app: :script_tools,
-      version: "0.1.2",
+      version: "0.1.0",
       elixir: "~> 1.7",
       start_permanent: Mix.env() == :prod,
       deps: deps(),
