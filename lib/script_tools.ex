@@ -7,6 +7,7 @@ defmodule ScriptTools do
   def load_native do
     priv = :code.priv_dir(:script_tools)
     :erlang.load_nif(priv ++ '/script_tools', 0)
+    :ok
   end
 
   @doc """
