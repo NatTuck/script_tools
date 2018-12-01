@@ -2,13 +2,15 @@ defmodule ScriptTools.MixProject do
   use Mix.Project
 
   def project do
+    Code.require_file("lib/mix/tasks/compile.simple_make.ex")
     [
       app: :script_tools,
       version: "0.1.0",
       elixir: "~> 1.7",
       start_permanent: Mix.env() == :prod,
       deps: deps(),
-      compilers: Mix.compilers ++ [:simple_make],
+      #compilers: Mix.compilers ++ [:simple_make],
+      compilers: [:simple_make | Mix.compilers],
     ]
   end
 
