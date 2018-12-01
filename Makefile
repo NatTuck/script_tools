@@ -11,14 +11,15 @@ endif
 CFLAGS  := -c -fPIC -I$(ERLINC) -D_GNU_SOURCE
 LDFLAGS := -shared
 
-tools.so: src/tools.o
-	gcc $(LDFLAGS) -o tools.so src/tools.o $(LDLIBS)
+priv/script_tools.so: src/script_tools.o
+	mkdir -p priv
+	gcc $(LDFLAGS) -o priv/script_tools.so src/script_tools.o $(LDLIBS)
 
-src/tools.o: src/tools.c
-	gcc $(CFLAGS) -o src/tools.o src/tools.c
+src/script_tools.o: src/script_tools.c
+	gcc $(CFLAGS) -o src/script_tools.o src/script_tools.c
 
 clean:
-	rm -f tools.so src/tools.o
+	rm -f priv/*.so src/*.o
 
 .PHONY: clean
 
