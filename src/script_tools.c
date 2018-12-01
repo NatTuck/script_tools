@@ -3,11 +3,13 @@
 #include <stdio.h>
 #include <string.h>
 #include <assert.h>
+#include <alloca.h>
 
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <termios.h>
 #include <unistd.h>
+#include <errno.h>
 
 #include <erl_nif.h>
 
@@ -115,11 +117,46 @@ ERL_NIF_TERM
 st_execvp(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
 {
     assert(argc == 2);
+    int rv;
 
-    char* cmd = strndupa(cmd.data, cmd.size);
+    ErlNifBinary text;
+    rv = enif_inspect_binary(env, argv[0], &text);
+    if (!rv) {
+        return make_error(env, "badarg");
+    }
+    char* cmd = strndupa(text.data, text.size);
 
-    
+    unsigned int size;
+    rv = enif_get_list_length(env, argv[1], &size);
+    if (!rv) {
+        return make_error(env, "badarg");
+    }
 
+    char** args = alloca(size * sizeof(char*));
+
+    ERL_NIF_TERM head;
+    ERL_NIF_TERM tail = argv[1];
+
+    for (unsigned int ii = 0; ii < size; ++ii) {
+        rv = enif_get_list_cell(env, tail, &head, &tail);
+        if (!rv) {
+            return make_error_int(env, "badarg", ii);
+        }
+
+        rv = enif_inspect_binary(env, head, &text);
+        if (!rv) {
+            return make_error_int(env, "badarg", ii);
+        }
+
+        args[ii] = strndupa(text.data, text.size);
+    }
+
+    // Make sure we don't stay stuck in awkward terminal mode.
+    system("stty sane");
+
+    rv = execvp(cmd, args);
+    assert(rv == -1);
+    return make_error_int(env, "errno", errno);
 }
 
 static
@@ -157,11 +194,11 @@ st_waitpid(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
 
 static ErlNifFunc funcs[] =
 {
-    {"sys_exit", 1, st_exit},
-    {"system", 1, st_system},
-    {"execvp", 2, st_execvp},
-    {"fork", 0, st_fork},
-    {"waitpid", 1, st_waitpid},
+    {"sys_exit", 1, st_exit, 0},
+    {"system", 1, st_system, ERL_NIF_DIRTY_JOB_IO_BOUND},
+    {"execvp", 2, st_execvp, 0},
+    {"fork", 0, st_fork, 0},
+    {"waitpid", 1, st_waitpid, ERL_NIF_DIRTY_JOB_IO_BOUND},
 };
 
 ERL_NIF_INIT(Elixir.ScriptTools, funcs, NULL, NULL, NULL, NULL)

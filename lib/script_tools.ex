@@ -15,6 +15,8 @@ defmodule ScriptTools do
 
   @doc """
   Exit the VM's system process.
+
+  This gives the running VM no chance to clean up anything.
   """
   def sys_exit(code) do
     raise "NIF didn't happen for exit(#{code})"
@@ -26,6 +28,9 @@ defmodule ScriptTools do
 
   @doc """
   Run a command in the foreground, block until it completes.
+
+  The terminal is reset before running the new program, and is restored
+  before resuming the VM.
   """
   def system(cmd) do
     raise "NIF didn't happen for system(#{cmd})"
@@ -33,6 +38,10 @@ defmodule ScriptTools do
 
   @doc """
   Replace our VM with a newly executed program.
+
+  This gives the running VM no chance to clean up anything.
+
+  The terminal is reset before running the new program.
   """
   def execvp(cmd, _args) do
     raise "NIF didn't happen for execvp(#{cmd}, ...)"
@@ -41,7 +50,8 @@ defmodule ScriptTools do
   @doc """
   Duplicate the current system process. See "man 2 fork" for details.
 
-  This is a bad idea.
+  This is almost certainly a bad idea. It only copies the active thread, so
+  things will probably go horribly wrong if the VM tries to do *anything*.
   """
   def fork() do
     raise "NIF didn't happen for fork()"
