@@ -5,7 +5,7 @@ defmodule ScriptTools.MixProject do
     Code.require_file("lib/mix/tasks/compile.simple_make.ex")
     [
       app: :script_tools,
-      version: "0.1.0",
+      version: "0.1.1",
       elixir: "~> 1.7",
       start_permanent: Mix.env() == :prod,
       deps: deps(),
