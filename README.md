@@ -10,17 +10,23 @@ not leaving the BEAM process in a consistent state or even still running.
 
 Functionality:
 
+Bad idea standard C library functions:
+
  - system (3)
+ - sys_exit = exit (3)
+
+Really bad idea system calls:
+
  - fork (2)
  - execvp (2)
- - exit (3)
+ - waitpid (2)
 
 ## Installation
 
 ```elixir
 def deps do
   [
-    {:script_tools, "~> 0.1", git: "https://github.com/NatTuck/script_tools" }
+    {:script_tools, "~> 0.1", git: "https://github.com/NatTuck/script_tools.git" }
   ]
 end
 ```
