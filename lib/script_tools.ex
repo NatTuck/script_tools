@@ -6,8 +6,11 @@ defmodule ScriptTools do
   @on_load :load_native
   def load_native do
     priv = :code.priv_dir(:script_tools)
-    :erlang.load_nif(priv ++ '/script_tools', 0)
-    :ok
+    if File.exists?(priv) do
+      :erlang.load_nif(priv ++ '/script_tools', 0)
+    else
+      :ok
+    end
   end
 
   @doc """
